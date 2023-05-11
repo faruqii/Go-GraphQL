@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"errors"
+
 	"github.com/graphql-go/graphql"
 	"github.com/faruqii/Go-GraphQL/models"
 )
@@ -15,6 +17,7 @@ type Book {
 	author: String
 }
 `
+
 var Schema, _ = graphql.NewSchema(graphql.SchemaConfig{
 	Query: graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
@@ -47,3 +50,36 @@ var bookType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+func GetBooks() ([]models.Book, error) {
+	// Create a new GraphQL query
+	query := `
+		query {
+			books {
+				title
+				author
+			}
+		}
+	`
+
+	// Execute the GraphQL query
+	params := graphql.Params{
+		Schema:        Schema,
+		RequestString: query,
+	}
+	result := graphql.Do(params)
+	if len(result.Errors) > 0 {
+		return nil, errors.New(result.Errors[0].Message)
+	}
+
+	// Extract books from query result
+	var books []models.Book
+	for _, b := range result.Data.(map[string]interface{})["books"].([]interface{}) {
+		books = append(books, models.Book{
+			Title:  b.(map[string]interface{})["title"].(string),
+			Author: b.(map[string]interface{})["author"].(string),
+		})
+	}
+
+	return books, nil
+}
