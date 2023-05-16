@@ -1,52 +1,54 @@
 package handler
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-
-	"github.com/faruqii/Go-GraphQL/graph"
+	"github.com/faruqii/Go-GraphQL/config"
+	"github.com/faruqii/Go-GraphQL/models"
 	"github.com/graphql-go/graphql"
 )
 
-func GraphqlHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		// Handle GET request
-		GetBooks(w, r)
-	case http.MethodPost:
-		// Handle POST request
-		// Read the request body
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "Error reading request body", http.StatusBadRequest)
-			return
-		}
+var BookType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Book",
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Type: graphql.ID,
+			},
+			"title": &graphql.Field{
+				Type: graphql.String,
+			},
+			"author": &graphql.Field{
+				Type: graphql.String,
+			},
+			"year": &graphql.Field{
+				Type: graphql.Int,
+			},
+			"publisher": &graphql.Field{
+				Type: graphql.String,
+			},
+		},
+	},
+)
 
-		// Execute the GraphQL query
-		params := graphql.Params{
-			Schema:        graph.Schema,
-			RequestString: string(body),
-		}
-		result := graphql.Do(params)
+func CreateBook(params graphql.ResolveParams) (interface{}, error) {
+	title, _ := params.Args["title"].(string)
+	author, _ := params.Args["author"].(string)
+	year, _ := params.Args["year"].(int)
+	publisher, _ := params.Args["publisher"].(string)
 
-		// Write the response
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		json.NewEncoder(w).Encode(result)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	book := &models.Book{
+		Title:     title,
+		Author:    author,
+		Year:      year,
+		Publisher: publisher,
 	}
+
+	config.DB.Create(book)
+
+	return book, nil
 }
 
-func GetBooks(w http.ResponseWriter, r *http.Request) {
-	// Get list of books
-	books, err := graph.GetBooks()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Write the response
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	json.NewEncoder(w).Encode(books)
+func GetBooks(params graphql.ResolveParams) (interface{}, error) {
+	var books []models.Book
+	config.DB.Find(&books)
+	return books, nil
 }
