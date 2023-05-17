@@ -63,6 +63,28 @@ func main() {
 			Resolve: handler.CreateBook,
 		},
 	}
+	bookFiels := graphql.Fields{
+		"id": &graphql.Field{
+			Type: graphql.ID,
+		},
+		"title": &graphql.Field{
+			Type: graphql.String,
+		},
+		"author": &graphql.Field{
+			Type: graphql.String,
+		},
+		"year": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"publisher": &graphql.Field{
+			Type: graphql.String,
+		},
+	}
+	handler.BookType = graphql.NewObject(graphql.ObjectConfig{
+		Name:   "books",
+		Fields: bookFiels,
+	})
+
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
 	rootMutation := graphql.NewObject(graphql.ObjectConfig{
 		Name: "RootMutation",
